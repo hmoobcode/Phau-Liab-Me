@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="hmn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Phau Nkauj</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;width:100%;height:100%;font-family:Arial,"Noto Sans",sans-serif;background:#f4f6f8;color:#202124;}
+body{overflow-x:hidden;}
+button,input{font-family:inherit;}
+
+#songsPage{display:block;min-height:100vh;}
+.page-header{position:sticky;top:0;z-index:100;height:60px;display:flex;align-items:center;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:0 10px;}
+.page-title{flex:1;text-align:center;font-size:19px;font-weight:800;}
+.search-area{padding:14px 15px;background:#f4f6f8;}
+.search-box{width:100%;height:48px;border:1px solid #ddd;border-radius:15px;background:#fff;padding:0 16px;font-size:16px;outline:none;}
+.search-box:focus{border-color:#999;}
+.song-list{padding:5px 15px 30px;max-width:700px;margin:auto;}
+.song-item{width:100%;display:flex;align-items:center;padding:16px 14px;margin-bottom:9px;border:0;border-radius:15px;background:#fff;text-align:left;box-shadow:0 2px 10px rgba(0,0,0,.05);cursor:pointer;transition:.15s;}
+.song-item:active{transform:scale(.985);}
+.song-number{width:43px;height:43px;border-radius:12px;background:#f0f2f5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-right:13px;flex-shrink:0;}
+.song-name{flex:1;font-size:16px;font-weight:600;line-height:1.4;}
+.song-arrow{color:#999;font-size:20px;margin-left:8px;}
+.no-result{padding:40px 20px;text-align:center;color:#888;}
+
+#viewerPage{display:none;position:fixed;inset:0;z-index:500;background:#f4f6f8;color:#202124;overflow:hidden;}
+#viewerPage.theme-dark{background:#111;color:#fff;}
+#viewerPage.theme-dark .viewer-header{background:rgba(0,0,0,.88);}
+#viewerPage.theme-dark .viewer-bottom{background:rgba(0,0,0,.92);}
+#viewerPage.theme-dark .bottom-button{background:#292929;color:#fff;}
+#viewerPage.theme-dark .slide-text{color:#fff;}
+#viewerPage.theme-light{background:#f4f6f8;color:#202124;}
+#viewerPage.theme-light .viewer-header{background:rgba(255,255,255,0.95);color:#202124;box-shadow:0 2px 10px rgba(0,0,0,.08);}
+#viewerPage.theme-light .viewer-button{color:#202124;}
+#viewerPage.theme-light .viewer-title{color:#202124;}
+#viewerPage.theme-light .viewer-bottom{background:rgba(255,255,255,0.95);box-shadow:0 -2px 10px rgba(0,0,0,.08);}
+#viewerPage.theme-light .bottom-button{background:#e0e0e0;color:#202124;}
+#viewerPage.theme-light .slide-counter{color:#555;}
+#viewerPage.theme-light .slide-text{color:#202124;}
+
+.viewer-header{position:absolute;top:0;left:0;right:0;height:60px;z-index:20;display:flex;align-items:center;background:rgba(255,255,255,0.95);padding:0 8px;}
+.viewer-button{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:inherit;font-size:23px;cursor:pointer;flex-shrink:0;}
+.viewer-button:active{background:rgba(128,128,128,.2);}
+.viewer-title{flex:1;text-align:center;padding:0 8px;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.viewer-content{position:absolute;inset:60px 0 58px 0;overflow:hidden;}
+.slide-container{width:100%;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:25px 20px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:none;}
+.slide{width:100%;max-width:1100px;min-height:auto;background:transparent;color:inherit;border-radius:0;padding:0;box-shadow:none;overflow-wrap:break-word;transform-origin:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.slide-text{white-space:pre-wrap;font-size:25px;line-height:1.65;text-align:center;word-break:break-word;overflow-wrap:anywhere;width:100%;}
+.empty-slide{color:#aaa;text-align:center;padding-top:30%;}
+.viewer-bottom{position:absolute;left:0;right:0;bottom:0;height:58px;z-index:30;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 5px;}
+.bottom-button{height:42px;min-width:44px;border:0;border-radius:12px;background:#e0e0e0;color:inherit;font-size:15px;padding:0 13px;cursor:pointer;}
+.bottom-button:active{transform:scale(.95);opacity:0.8;}
+.slide-counter{min-width:75px;text-align:center;font-size:14px;color:inherit;opacity:0.8;}
+.viewer-search{position:absolute;top:60px;left:0;right:0;z-index:40;background:#fff;padding:10px;display:none;box-shadow:0 5px 15px rgba(0,0,0,.15);}
+.viewer-search input{width:100%;height:43px;border:1px solid #ddd;border-radius:12px;padding:0 14px;outline:none;font-size:15px;}
+.viewer-search-results{max-height:230px;overflow:auto;background:#fff;}
+.viewer-search-item{padding:13px 12px;border-bottom:1px solid #eee;cursor:pointer;font-size:14px;color:#202124;}
+.viewer-search-item:active{background:#f0f2f5;}
+.loading{position:absolute;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(255,255,255,0.9);color:#202124;}
+.spinner{width:42px;height:42px;border:4px solid #ddd;border-top-color:#202124;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-box{width:100%;max-width:500px;padding:25px;text-align:center;}
+.error-box h2{margin-top:0;}
+.error-box p{line-height:1.7;opacity:0.8;}
+.error-box button{border:0;padding:12px 20px;border-radius:12px;font-size:15px;cursor:pointer;}
+@media (orientation:landscape){
+#viewerPage .viewer-header{height:52px;}
+#viewerPage .viewer-content{inset:52px 0 55px 0;}
+#viewerPage .viewer-search{top:52px;}
+#viewerPage .viewer-bottom{height:55px;}
+#viewerPage .slide-container{padding:12px 20px;}
+}
+@media(max-width:480px){
+.slide-text{font-size:21px;}
+.viewer-bottom{gap:5px;}
+.bottom-button{min-width:40px;padding:0 9px;}
+}
+@supports(padding:max(0px)){
+.viewer-header{padding-top:env(safe-area-inset-top);height:calc(60px + env(safe-area-inset-top));}
+.viewer-content{inset:calc(60px + env(safe-area-inset-top)) 0 calc(58px + env(safe-area-inset-bottom)) 0;}
+.viewer-bottom{padding-bottom:env(safe-area-inset-bottom);height:calc(58px + env(safe-area-inset-bottom));}
+}
+.viewer-header,.viewer-bottom{user-select:none;-webkit-user-select:none;}
+</style>
+</head>
+<body>
+
+<section id="songsPage">
+    <header class="page-header">
+        <div class="page-title">Phau Nkauj</div>
+    </header>
+    <div class="search-area">
+        <input id="songSearch" class="search-box" type="search" placeholder="Nrhiav npe nkauj..." oninput="renderSongList()">
+    </div>
+    <div id="songList" class="song-list"></div>
+</section>
+
+<section id="viewerPage" class="theme-light">
+    <header class="viewer-header">
+        <button class="viewer-button" onclick="closeViewer()">←</button>
+        <div id="viewerTitle" class="viewer-title">Phau Nkauj</div>
+        <button class="viewer-button" onclick="toggleTheme()" title="Hloov xim (Theme)">🎨</button>
+        <button class="viewer-button" onclick="toggleViewerSearch()">🔍</button>
+    </header>
+
+    <div id="viewerSearch" class="viewer-search">
+        <input id="viewerSearchInput" type="search" placeholder="Nrhiav lwm zaj nkauj..." oninput="renderViewerSearch()">
+        <div id="viewerSearchResults" class="viewer-search-results"></div>
+    </div>
+
+    <div class="viewer-content">
+        <div id="slideContainer" class="slide-container">
+            <div id="slide" class="slide">
+                <div id="slideText" class="slide-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="viewer-bottom">
+        <button class="bottom-button" onclick="previousSlide()">◀</button>
+        <div id="slideCounter" class="slide-counter">0 / 0</div>
+        <button class="bottom-button" onclick="nextSlide()">▶</button>
+    </div>
+
+    <div id="loading" class="loading" style="display:none;">
+        <div class="spinner"></div>
+        <div>กำลังอ่านไฟล์ PPTX...</div>
+    </div>
+</section>
+
+<script src="jszip.min.js"></script>
+<script>
+const songs = [
+"02.Cawm_seej_Yexus_tau_los.pptx",
+"03.Thov_nej_hu_nkauj_qhuas_Tswv_Yexus.pptx",
+"04.Koob tsheej nco txog Yexus.pptx",
+"05.Lub me nroog npelehees.pptx",
+"08.Ntiajteb_zoo_siab.pptx",
+"20.Kuv_muaj_zoo_vaj_zoo_tsev.pptx",
+"21.Kuv_twb_raug_kev_txom_nyem_ntsuav.pptx",
+"23.Luag_muab_Yexus_tua_saum_ntoo_khaub_lig.pptx",
+"26.Twb_tau_2000_xyoo_dhau_los_lawm.pptx",
+"50.Cov_ntseeg_Yexus_yeej_yog_ib_tsex.pptx",
+"51.Thaum_Tswv_Yexus_txhiv_peb_lub_txim.pptx",
+"56.Koj_yog_Vajtswv.pptx",
+"62.Kuv_tus_kwv_luag_yog_Tswv_Yexus.pptx",
+"67.Leej_twd_txhiv_tau_peb_lub_txim.pptx",
+"73.Ntiaj_teb_nyob_tsis_ntev.pptx",
+"74.Ntiaj_teb_Vajtswv_tsim_tseg.pptx",
+"92.Tswv_Yexus_lub_npe.pptx",
+"98.Tus_Tswv_Yexus_yeej_yog_txoj_kev.pptx",
+"105.Vajtswv_hlub_neeg_ntiajteb.pptx",
+"112.Peb_Vajtswv_Yexus.pptx",
+"113.kwv_tij_neej_tsa_txhob_ua_siab_hnyav.pptx",
+"115.Yexus_hlub_kuv_kuv_zoo_siab_kawg.pptx",
+"117.Vajtswv_thiab_peb_tus_Tswv_Yexus.pptx",
+"118.Tus_Tswv_Yexus_los_nrog_peb_nyob.pptx",
+"124.Zoo_siab_kawg_kuv_tus_Tswv_Yexus.pptx",
+"127.Kuv_niaj_hnub_pheej_xav_txog.pptx",
+"128.Vajtswv_thov_koj_foom_koob_hmoov.pptx",
+"129.Kuv_muab_kuv_lub_cev_rau_Yexus.pptx",
+"130.Tswv_Yexus_yog_tus_uas_hlub_kuv.pptx",
+"134.Kuv_twb_hnov_Tswv_Yexus_hu_kuv.pptx",
+"162.Ib_hnub_txoj_sia_yuav_tsis_muaj_nyob.pptx",
+"164.Kuv_cia_siab_thiab_los_ntseeg_Yexus.pptx",
+"166.Kuv_yuav_tau_mus_txog.pptx",
+"169.Saum_ceebtsheej_nrog_Vajtswv_Nyob.pptx",
+"170.Nyob_saum_ntuj_zoo_dua_ntais.pptx",
+"172.Tshuav_ceebtsheej_ntuj_tau_zoo.pptx",
+"173.Tuaj_ua_ke_mus_ua_ke.pptx",
+"175.Yexus_mus_tu_chaw_tseg.pptx",
+"179.Thaum_txog_hnub_Vajtswv_yuav_tshua_raj.pptx",
+"182.Thaum_sawvdaws_tso_ntiaj_teb_no_tseg.pptx",
+"183.Thaum_yexus_rov_los.pptx",
+"186.Peb_ib_tsoom_ntseeg_peb_zoo_siab_kawg.pptx",
+"188.Peb_hmoob_noj_peb_caug.pptx",
+"190.Au_Vajtswv_peb_tuaj_nyob_ua_ke.pptx",
+"196.Peb_yuav_tau_taug_kev.pptx",
+"223.Thaum_ub_Vajtswv_tsim_tibneeg.pptx",
+"234.Ua_tsaug_leej_txiv.pptx",
+"235.Kuv_los_cuag_koj_Yexus.pptx",
+"236.Muaj_hwjchim_muaj_hwjchim.pptx",
+"237.Ua_koj_tsaug_Tswv_Yexus.pptx",
+"245.Vajtswv_ua_koj_tsaug.pptx",
+"253.Menyuam_yaj_poob_hav_zoov.pptx",
+"262.Kuv_twb_xaiv_tag_lawm.pptx",
+"325.Hnub_no_zoo_siab_uas_peb_tuaj_ua_ke.pptx",
+"329.Lub_xyoo_laus_tag_nrho_mus.pptx",
+"331.Kav_tsij_los_nrog_peb_koom_siab.pptx"
+];
+
+let currentFile = "";
+let slides = [];
+let currentSlide = 0;
+let fontSize = 25;
+let currentPage = "songs";
+
+function toggleTheme(){
+    const viewer = document.getElementById("viewerPage");
+    if(viewer.classList.contains("theme-dark")){
+        viewer.classList.remove("theme-dark");
+        viewer.classList.add("theme-light");
+    } else {
+        viewer.classList.remove("theme-light");
+        viewer.classList.add("theme-dark");
+    }
+}
+
+function getSongName(file){
+    let name = file.replace(/\.pptx$/i,"");
+    name = name.replace(/^\d+\./,"");
+    name = name.replace(/_/g," ");
+    return name;
+}
+
+function getSongNumber(file){
+    const match = file.match(/^(\d+)\./);
+    return match ? match[1] : "";
+}
+
+// จัดการเหตุการณ์เมื่อกดปุ่ม Back ของเบราว์เซอร์/มือถือ
+window.addEventListener("popstate", function(){
+    const viewer = document.getElementById("viewerPage");
+    if(viewer.style.display === "block"){
+        closeViewer(false);
+    }
+});
+
+function renderSongList(){
+    const list = document.getElementById("songList");
+    const search = document.getElementById("songSearch").value.trim().toLowerCase();
+    list.innerHTML="";
+    const filtered = songs.filter(file=>{
+        const name = getSongName(file).toLowerCase();
+        const number = getSongNumber(file).toLowerCase();
+        return (name.includes(search) || number.includes(search) || file.toLowerCase().includes(search));
+    });
+
+    if(filtered.length===0){
+        list.innerHTML=`<div class="no-result">Tsis pom zaj nkauj.</div>`;
+        return;
+    }
+
+    filtered.forEach(file=>{
+        const button = document.createElement("button");
+        button.className = "song-item";
+        button.onclick=()=>{ openSong(file); };
+        button.innerHTML=`
+            <div class="song-number">${getSongNumber(file)}</div>
+            <div class="song-name">${escapeHTML(getSongName(file))}</div>
+            <div class="song-arrow">›</div>
+        `;
+        list.appendChild(button);
+    });
+}
+
+async function openSong(file){
+    currentFile=file;
+    if(currentPage !== "viewer"){
+        history.pushState({page:"viewer",file:file},"","#viewer");
+    }
+    currentPage="viewer";
+    const viewer = document.getElementById("viewerPage");
+    const title = document.getElementById("viewerTitle");
+    title.textContent = getSongName(file);
+    viewer.style.display="block";
+    document.body.style.overflow="hidden";
+    document.getElementById("viewerSearch").style.display="none";
+    document.getElementById("viewerSearchInput").value="";
+    document.getElementById("viewerSearchResults").innerHTML="";
+    restoreSlideElement();
+    await lockLandscape();
+    await readPPTX(file);
+}
+
+function restoreSlideElement(){
+    const container = document.getElementById("slideContainer");
+    let slide = document.getElementById("slide");
+    if(!slide){
+        container.innerHTML=`<div id="slide" class="slide"><div id="slideText" class="slide-text"></div></div>`;
+        return;
+    }
+    let text = document.getElementById("slideText");
+    if(!text){
+        slide.innerHTML=`<div id="slideText" class="slide-text"></div>`;
+    }
+}
+
+async function lockLandscape(){
+    try{
+        if(screen.orientation && screen.orientation.lock){
+            await screen.orientation.lock("landscape");
+        }
+    }catch(error){
+        console.log("Landscape lock unavailable", error);
+    }
+}
+
+async function unlockOrientation(){
+    try{
+        if(screen.orientation && screen.orientation.unlock){
+            screen.orientation.unlock();
+        }
+    }catch(error){
+        console.log("Orientation unlock unavailable", error);
+    }
+}
+
+function closeViewer(goBack=true){
+    const viewer = document.getElementById("viewerPage");
+    viewer.style.display="none";
+    document.body.style.overflow="auto";
+    slides=[];
+    currentSlide=0;
+    unlockOrientation();
+    currentPage="songs";
+    if(goBack && location.hash === "#viewer"){
+        history.back();
+    }
+}
+
+async function readPPTX(file){
+    const loading = document.getElementById("loading");
+    loading.style.display="flex";
+    try{
+        if(typeof JSZip === "undefined"){
+            throw new Error("ไม่พบ jszip.min.js");
+        }
+        const url = "pptx/" + encodeURIComponent(file);
+        const response = await fetch(url);
+        if(!response.ok){
+            throw new Error("ไม่สามารถเปิดไฟล์ PPTX ได้: " + response.status);
+        }
+        const buffer = await response.arrayBuffer();
+        const zip = await JSZip.loadAsync(buffer);
+        slides = await extractSlides(zip);
+        if(slides.length===0){
+            throw new Error("ไม่พบข้อความในสไลด์");
+        }
+        currentSlide=0;
+        fontSize=25;
+        showSlide();
+        setTimeout(fitTextToScreen,50);
+    }catch(error){
+        console.error(error);
+        showError(error.message);
+    }
+    loading.style.display="none";
+}
+
+async function extractSlides(zip){
+    const slideFiles=[];
+    zip.forEach((path,file)=>{
+        const match = path.match(/^ppt\/slides\/slide(\d+)\.xml$/i);
+        if(match){
+            slideFiles.push({number:parseInt(match[1],10),file:file});
+        }
+    });
+    slideFiles.sort((a,b)=>a.number-b.number);
+    const result=[];
+    for(const item of slideFiles){
+        const xml = await item.file.async("text");
+        const text = extractTextFromXML(xml);
+        result.push({number:item.number,text:text});
+    }
+    return result;
+}
+
+function extractTextFromXML(xml){
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml,"application/xml");
+    const textNodes = Array.from(doc.getElementsByTagName("a:t"));
+    let lines=[];
+    const paragraphs = Array.from(doc.getElementsByTagName("a:p"));
+    paragraphs.forEach(p=>{
+        const nodes = Array.from(p.getElementsByTagName("a:t"));
+        const text = nodes.map(n=>n.textContent).join("");
+        if(text.trim() !== ""){
+            lines.push(text);
+        }
+    });
+    if(lines.length===0){
+        lines = textNodes.map(n=>n.textContent);
+    }
+    return lines.join("\n");
+}
+
+function showSlide(){
+    if(!slides.length){ return; }
+    restoreSlideElement();
+    const data = slides[currentSlide];
+    const slideText = document.getElementById("slideText");
+    if(!slideText){ return; }
+    if(data.text.trim()===""){
+        slideText.innerHTML=`<div class="empty-slide">ໜ້ານີ້ບໍ່ມີຂໍ້ຄວາມ</div>`;
+    }else{
+        slideText.textContent = data.text;
+    }
+    document.getElementById("slideCounter").textContent = `${currentSlide+1} / ${slides.length}`;
+    updateFontSize();
+    const container = document.getElementById("slideContainer");
+    container.scrollTop=0;
+    container.scrollLeft=0;
+    setTimeout(fitTextToScreen,20);
+}
+
+function fitTextToScreen(){
+    const slide = document.getElementById("slide");
+    const text = document.getElementById("slideText");
+    const container = document.getElementById("slideContainer");
+    if(!slide || !text || !container){ return; }
+    if(!text.textContent.trim()){ return; }
+    let size = fontSize;
+    const availableHeight = container.clientHeight - 40;
+    let safety=0;
+    while(slide.scrollHeight > availableHeight && size > 12 && safety < 100){
+        size--;
+        text.style.fontSize = size + "px";
+        safety++;
+    }
+    if(size < 12){ size=12; }
+    fontSize=size;
+    updateFontSize();
+}
+
+function nextSlide(){
+    if(!slides.length) return;
+    currentSlide = (currentSlide + 1) % slides.length;
+    showSlide();
+}
+
+function previousSlide(){
+    if(!slides.length) return;
+    currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+    showSlide();
+}
+
+function updateFontSize(){
+    const text = document.getElementById("slideText");
+    if(!text){ return; }
+    text.style.fontSize = fontSize + "px";
+}
+
+function toggleViewerSearch(){
+    const box = document.getElementById("viewerSearch");
+    if(box.style.display === "block"){
+        box.style.display="none";
+        return;
+    }
+    box.style.display="block";
+    document.getElementById("viewerSearchInput").focus();
+}
+
+function renderViewerSearch(){
+    const input = document.getElementById("viewerSearchInput");
+    const result = document.getElementById("viewerSearchResults");
+    const q = input.value.trim().toLowerCase();
+    result.innerHTML="";
+    if(q === ""){ return; }
+    const filtered = songs.filter(file=>{
+        const name = getSongName(file).toLowerCase();
+        const number = getSongNumber(file).toLowerCase();
+        return (name.includes(q) || number.includes(q) || file.toLowerCase().includes(q));
+    });
+    if(filtered.length === 0){
+        result.innerHTML=`<div class="viewer-search-item">Tsis pom zaj nkauj.</div>`;
+        return;
+    }
+    filtered.forEach(file=>{
+        const item = document.createElement("div");
+        item.className = "viewer-search-item";
+        item.textContent = getSongNumber(file) + "  " + getSongName(file);
+        item.onclick=()=>{
+            document.getElementById("viewerSearch").style.display="none";
+            openSong(file);
+        };
+        result.appendChild(item);
+    });
+}
+
+function showError(message){
+    restoreSlideElement();
+    const slideText = document.getElementById("slideText");
+    if(!slideText){ return; }
+    slideText.innerHTML=`
+        <div class="error-box">
+            <h2>ບໍ່ສາມາດອ່ານໄຟລ໌ໄດ້</h2>
+            <p>${escapeHTML(message)}</p>
+            <p>ກວດເບິ່ງວ່າໄຟລ໌ PPTX ຢູ່ໃນໂຟນເດີ <b>pptx</b> ແລະຊື່ໄຟລ໌ຖືກຕ້ອງ.</p>
+            <button onclick="closeViewer()">ກັບຄືນ</button>
+        </div>
+    `;
+}
+
+function escapeHTML(text){
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+let touchStartX = 0;
+let touchStartY = 0;
+let initialDistance = 0;
+let initialFontSize = 25;
+const slideContainer = document.getElementById("slideContainer");
+
+function getTouchDistance(touches){
+    return Math.hypot(
+        touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY
+    );
+}
+
+slideContainer.addEventListener("touchstart", (e)=>{
+    if(e.touches.length === 2){
+        initialDistance = getTouchDistance(e.touches);
+        initialFontSize = fontSize;
+    }else if(e.touches.length === 1){
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }
+},{passive:true});
+
+slideContainer.addEventListener("touchmove", (e)=>{
+    if(e.touches.length === 2 && initialDistance > 0){
+        const currentDistance = getTouchDistance(e.touches);
+        const scale = currentDistance / initialDistance;
+        let newSize = Math.round(initialFontSize * scale);
+        
+        if(newSize < 12) newSize = 12;
+        if(newSize > 80) newSize = 80;
+        
+        fontSize = newSize;
+        updateFontSize();
+    }
+},{passive:true});
+
+slideContainer.addEventListener("touchend", (e)=>{
+    if(e.touches.length < 2){
+        initialDistance = 0;
+    }
+    if(e.changedTouches.length === 1 && e.touches.length === 0){
+        const endX = e.changedTouches[0].screenX;
+        const endY = e.changedTouches[0].screenY;
+        const diffX = endX - touchStartX;
+        const diffY = endY - touchStartY;
+        if(Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY)){
+            if(diffX < 0){ nextSlide(); }
+            else{ previousSlide(); }
+        }
+    }
+},{passive:true});
+
+window.addEventListener("resize", ()=>{
+    if(document.getElementById("viewerPage").style.display === "block"){
+        setTimeout(fitTextToScreen, 100);
+    }
+});
+
+if(screen.orientation){
+    screen.orientation.addEventListener("change", ()=>{
+        if(document.getElementById("viewerPage").style.display === "block"){
+            setTimeout(fitTextToScreen, 150);
+        }
+    });
+}
+
+document.addEventListener("keydown", (e)=>{
+    const viewer = document.getElementById("viewerPage");
+    if(viewer.style.display !== "block"){ return; }
+    if(e.key === "ArrowRight"){ nextSlide(); }
+    if(e.key === "ArrowLeft"){ previousSlide(); }
+    if(e.key === "Escape"){ closeViewer(); }
+});
+
+renderSongList();
+</script>
+</body>
+</html>
